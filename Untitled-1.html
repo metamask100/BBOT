@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>BBOT — Hackathon Rusia</title>
+
+  <style>
+    :root{
+      --bg:#000000;
+      --ink:#ffffff;
+      --line: rgba(255,255,255,.18);
+      --glass: rgba(0,0,0,.55);
+      --soft: rgba(255,255,255,.06);
+      --soft2: rgba(255,255,255,.12);
+    }
+
+    /* ✅ anti “blanco abajo” en móviles */
+    html, body { background: var(--bg) !important; height:100%; }
+    body{
+      margin:0;
+      color:var(--ink);
+      background: var(--bg);
+      min-height: 100dvh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      overflow-x:hidden;
+      overscroll-behavior: none;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    *{ box-sizing:border-box; }
+    img, svg { max-width:100%; height:auto; display:block; }
+
+    /* Spotlight */
+    .spot{
+      pointer-events:none;
+      position:fixed; inset:0;
+      background: radial-gradient(650px 460px at var(--mx, 50%) var(--my, 50%),
+                rgba(255,255,255,.12), transparent 62%);
+      mix-blend-mode: screen;
+      opacity:.55;
+      z-index:0;
+      transition: opacity .25s ease;
+    }
+
+    /* Grain */
+    .grain{
+      pointer-events:none;
+      position:fixed; inset:-40%;
+      opacity:.085;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      animation: grainMove 11s linear infinite;
+      z-index:1;
+    }
+    @keyframes grainMove{ from{transform:translate(0,0)} to{transform:translate(4%,-3%)} }
+
+    /* Cursor (se apaga en touch) */
+    .cursor{
+      position:fixed;
+      width:18px; height:18px;
+      border-radius:50%;
+      pointer-events:none;
+      z-index:999;
+      background: rgba(255,255,255,.18);
+      box-shadow: 0 0 50px rgba(255,255,255,.12), 0 0 100px rgba(255,255,255,.07);
+      transform: translate(-50%, -50%);
+      mix-blend-mode: screen;
+      transition: width .15s ease, height .15s ease, opacity .2s ease;
+      opacity:1;
+    }
+    .cursor.big{ width:38px; height:38px; }
+    .cursor.off{ opacity:0; }
+
+    .wrap{ position:relative; z-index:2; }
+
+    /* ✅ NAV responsive (2 filas en móvil) */
+    nav{
+      position:fixed;
+      top: max(12px, env(safe-area-inset-top));
+      left:50%;
+      transform: translateX(-50%);
+      width:min(1160px, calc(100% - 22px));
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 22px 80px rgba(0,0,0,.55);
+      z-index:20;
+    }
+    .brand{ display:flex; align-items:center; gap:10px; user-select:none; flex-wrap:wrap; }
+    .mark{
+      width:12px; height:12px; border-radius:50%;
+      background:#fff;
+      box-shadow:0 0 18px rgba(255,255,255,.22);
+      opacity:.95;
+      flex:0 0 auto;
+    }
+    .brand b{
+      letter-spacing:2px;
+      font-weight:900;
+      text-transform:uppercase;
+      font-size:13px;
+      color:#fff;
+      flex:0 0 auto;
+    }
+    .pill{
+      border:1px solid var(--line);
+      background: var(--soft);
+      border-radius:999px;
+      padding:6px 10px;
+      color:#fff;
+      font-size:11px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      opacity:.92;
+    }
+
+    .navBtns{
+      display:flex;
+      gap:8px;
+      flex-wrap:nowrap;
+      justify-content:flex-end;
+      align-items:center;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width:none;
+    }
+    .navBtns::-webkit-scrollbar{ display:none; }
+
+    .btn{
+      border:1px solid var(--line);
+      background: var(--soft);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:12px;
+      letter-spacing:.6px;
+      cursor:pointer;
+      text-transform:uppercase;
+      transition: transform .12s ease, filter .12s ease;
+      flex:0 0 auto;
+      touch-action: manipulation;
+    }
+    .btn:hover{ filter:brightness(1.1); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+    .btn.primary{
+      border-color: rgba(255,255,255,.28);
+      background: var(--soft2);
+    }
+
+    /* ✅ layout padding top seguro (nav + safe area) */
+    section{
+      width:min(1160px, calc(100% - 22px));
+      margin:0 auto;
+      padding:
+        calc(110px + env(safe-area-inset-top))
+        0
+        calc(16px + env(safe-area-inset-bottom));
+    }
+
+    .kicker{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+
+    .title{
+      margin:0;
+      font-size: clamp(44px, 8vw, 120px);
+      line-height:.92;
+      letter-spacing:-1.2px;
+      font-weight:950;
+      text-transform:uppercase;
+      user-select:none;
+      color:#fff;
+      word-break: break-word;
+    }
+    .titleSub{
+      margin:10px 0 0;
+      color:#fff;
+      letter-spacing:1.1px;
+      text-transform:uppercase;
+      font-size: clamp(11px, 2.8vw, 12px);
+      opacity:.92;
+    }
+
+    .titleLine{
+      height:1px;
+      width:min(620px, 100%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+      margin:18px 0 0;
+      position:relative;
+      overflow:hidden;
+      border-radius:999px;
+    }
+    .titleLine::after{
+      content:"";
+      position:absolute; inset:0;
+      transform: translateX(-60%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+      animation: shimmer 2.6s ease-in-out infinite;
+      opacity:.65;
+    }
+    @keyframes shimmer{
+      0%{ transform: translateX(-70%); opacity:.25; }
+      50%{ opacity:.85; }
+      100%{ transform: translateX(70%); opacity:.25; }
+    }
+
+    .desc{
+      max-width: 92ch;
+      margin:16px 0 22px;
+      color:#fff;
+      font-size: clamp(14px, 3.6vw, 16px);
+      line-height:1.85;
+      opacity:.9;
+    }
+
+    .heroRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    .bigBtn{
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:13px 16px;
+      font-size:12px;
+      letter-spacing:.9px;
+      cursor:pointer;
+      text-transform:uppercase;
+      color:#fff;
+      transition: transform .12s ease, filter .12s ease;
+      touch-action: manipulation;
+    }
+    .bigBtn:hover{ filter:brightness(1.12); transform: translateY(-1px); }
+    .bigBtn.primary{
+      background: rgba(255,255,255,.14);
+      border-color: rgba(255,255,255,.30);
+    }
+
+    /* ✅ panels responsive */
+    .panels{
+      margin-top:34px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:14px;
+    }
+    @media (max-width: 980px){
+      .panels{ grid-template-columns: 1fr; }
+    }
+
+    .panel, .sponsorCard{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius:26px;
+      padding:18px;
+      position:relative;
+      box-shadow: 0 28px 110px rgba(0,0,0,.55);
+      transform: translateY(14px);
+      opacity:0;
+      transition: opacity .9s cubic-bezier(.2,.8,.2,1), transform .9s cubic-bezier(.2,.8,.2,1);
+      will-change: transform, opacity;
+    }
+    .panel.show, .sponsorCard.show{ opacity:1; transform: translateY(0); }
+
+    .panelTop{
+      display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+      text-transform:uppercase;
+      letter-spacing:1px;
+      font-size:11px;
+      color:#fff;
+      opacity:.9;
+      margin-bottom:10px;
+    }
+    .panel h3{
+      margin:0 0 8px 0;
+      font-size: clamp(18px, 4.5vw, 20px);
+      letter-spacing:.6px;
+      text-transform:uppercase;
+      color:#fff;
+    }
+    .panel p{
+      margin:0;
+      color:#fff;
+      opacity:.9;
+      line-height:1.75;
+      font-size: clamp(13px, 3.4vw, 14px);
+    }
+
+    .track{
+      margin-top:16px;
+      height:10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      background: rgba(255,255,255,.45);
+      border-right:1px solid rgba(255,255,255,.30);
+      transition: width .08s linear;
+    }
+
+    /* Countdown boxes */
+    .countRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .tbox{
+      flex:1 1 120px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius:18px;
+      padding:12px;
+      text-align:center;
+      color:#fff;
+      min-width: 120px;
+    }
+    .tbox .n{ font-size: clamp(22px, 7vw, 30px); font-weight:950; letter-spacing:1px; }
+    .tbox .l{ font-size:11px; letter-spacing:1.2px; margin-top:4px; text-transform:uppercase; opacity:.9; }
+
+    /* Timeline */
+    .timeline{ margin-top:14px; display:grid; gap:10px; }
+    .step{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius:20px;
+      padding:14px;
+      transition: transform .14s ease, filter .14s ease;
+      color:#fff;
+    }
+    .step:hover{ transform: translateY(-1px); filter:brightness(1.06); }
+    .step .tag{
+      display:inline-flex;
+      gap:8px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:11px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      opacity:.92;
+      margin-bottom:10px;
+    }
+    .step b{ display:block; letter-spacing:.6px; text-transform:uppercase; margin-bottom:6px; }
+    .step span{ display:block; opacity:.9; line-height:1.7; font-size: clamp(13px, 3.4vw, 14px); }
+
+    /* Nations */
+    .nationsGrid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 920px){ .nationsGrid{ grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px){ .nationsGrid{ grid-template-columns: 1fr; } }
+
+    .nation{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius:22px;
+      padding:14px;
+      cursor:pointer;
+      transition: transform .14s ease, filter .14s ease;
+      color:#fff;
+      position:relative;
+      overflow:hidden;
+      touch-action: manipulation;
+    }
+    .nation:hover{ transform: translateY(-1px); filter:brightness(1.06); }
+    .nation.pulse{ animation: pulse 320ms ease-out; }
+    @keyframes pulse{
+      0%{ transform: translateY(0) scale(1); }
+      45%{ transform: translateY(-2px) scale(1.015); }
+      100%{ transform: translateY(0) scale(1); }
+    }
+
+    .nationTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+    .flag{
+      width:46px; height:30px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.04);
+      display:grid; place-items:center;
+      font-size:16px;
+      letter-spacing:1px;
+      user-select:none;
+      color:#fff;
+      flex:0 0 auto;
+    }
+    .nationName{
+      text-transform:uppercase;
+      letter-spacing:1px;
+      font-size:12px;
+      font-weight:900;
+      color:#fff;
+    }
+    .nationLang{
+      font-size:12px;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      opacity:.9;
+    }
+    .thanks{
+      border-top:1px solid var(--line);
+      padding-top:10px;
+      line-height:1.65;
+      font-size: clamp(13px, 3.4vw, 14px);
+      min-height:44px;
+      opacity:.95;
+    }
+
+    /* Sponsors */
+    .sponsorTop{
+      display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      margin-bottom:12px;
+      color:#fff;
+    }
+    .sponsorTop h2{
+      margin:0;
+      font-size: clamp(22px, 5.5vw, 28px);
+      letter-spacing:-.2px;
+      text-transform:uppercase;
+      color:#fff;
+    }
+    .sponsorTop p{
+      margin:6px 0 0;
+      color:#fff;
+      opacity:.92;
+      line-height:1.7;
+      max-width:84ch;
+      font-size: clamp(13px, 3.4vw, 14px);
+    }
+    .logos{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .logoChip{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius:18px;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-transform:uppercase;
+      letter-spacing:1px;
+      font-size:12px;
+      color:#fff;
+      transition: transform .14s ease, filter .14s ease;
+      user-select:none;
+    }
+    .logoChip:hover{ transform: translateY(-1px); filter:brightness(1.1); }
+    .miniDot{
+      width:10px; height:10px; border-radius:50%;
+      background:#fff;
+      opacity:.9;
+      box-shadow: 0 0 16px rgba(255,255,255,.18);
+    }
+
+    .ctaRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:14px;
+      color:#fff;
+    }
+    .ctaText{ margin:0; color:#fff; opacity:.92; font-size: clamp(13px, 3.4vw, 14px); line-height:1.7; }
+
+    a.ctaBtn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      text-decoration:none;
+      border:1px solid rgba(255,255,255,.30);
+      background: rgba(255,255,255,.14);
+      color:#fff;
+      border-radius:18px;
+      padding:13px 16px;
+      text-transform:uppercase;
+      letter-spacing:.9px;
+      font-size:12px;
+      transition: transform .12s ease, filter .12s ease;
+      touch-action: manipulation;
+    }
+    a.ctaBtn:hover{ filter:brightness(1.12); transform: translateY(-1px); }
+
+    /* Marquee */
+    .marquee{
+      margin-top:14px;
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+      overflow:hidden;
+      background: rgba(255,255,255,.03);
+    }
+    .marqueeTrack{
+      display:flex; gap:28px; padding:10px 0; white-space:nowrap;
+      animation: marquee 18s linear infinite;
+      will-change: transform;
+    }
+    .marquee span{
+      color:#fff;
+      opacity:.85;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      font-size:11px;
+    }
+    @keyframes marquee{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
+
+    /* Bottom CTA */
+    .futureArea{
+      margin-top:44px;
+      padding:20px 0 0;
+      display:flex;
+      justify-content:center;
+    }
+    .futureBtn{
+      border:1px solid rgba(255,255,255,.30);
+      background: rgba(255,255,255,.12);
+      color:#fff;
+      border-radius:999px;
+      padding:14px 18px;
+      font-size:12px;
+      letter-spacing:1.1px;
+      text-transform:uppercase;
+      cursor:pointer;
+      transition: transform .12s ease, filter .12s ease;
+      touch-action: manipulation;
+      width: min(520px, 100%);
+    }
+    .futureBtn:hover{ filter:brightness(1.12); transform: translateY(-1px); }
+    .futureBtn:active{ transform: translateY(0) scale(.99); }
+
+    footer{
+      margin-top:24px;
+      padding:26px 0 calc(90px + env(safe-area-inset-bottom));
+      color:#fff;
+      opacity:.78;
+      font-size:12px;
+      text-align:center;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+      background:#000;
+      border-top: 1px solid rgba(255,255,255,.18);
+    }
+
+    /* Modal */
+    .modalWrap{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,.80);
+      z-index:60;
+      padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+    }
+    .modalWrap.on{ display:flex; }
+    .modal{
+      width:min(820px, 100%);
+      border:1px solid var(--line);
+      border-radius:26px;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 30px 100px rgba(0,0,0,.8);
+      overflow:hidden;
+      color:#fff;
+      transform: translateY(10px) scale(.985);
+      opacity:0;
+      animation:none;
+    }
+    .modalWrap.on .modal{ animation: popIn 260ms ease-out forwards; }
+    @keyframes popIn{
+      0%{ transform: translateY(14px) scale(.98); opacity:0; }
+      70%{ opacity:1; }
+      100%{ transform: translateY(0) scale(1); opacity:1; }
+    }
+    .modalTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+    }
+    .modalTop b{
+      letter-spacing:1.4px;
+      text-transform:uppercase;
+      font-size:12px;
+      color:#fff;
+      opacity:.95;
+    }
+    .close{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color:#fff;
+      border-radius:14px;
+      padding:9px 10px;
+      cursor:pointer;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.8px;
+      touch-action: manipulation;
+    }
+    .modalBody{
+      padding:16px;
+      color:#fff;
+      opacity:.92;
+      line-height:1.85;
+      font-size: clamp(13px, 3.4vw, 14px);
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .grain{ animation:none; }
+      .marqueeTrack{ animation:none; }
+      .cursor{ display:none; }
+      .panel,.sponsorCard{ transition:none; }
+      .modalWrap.on .modal{ animation:none; opacity:1; transform:none; }
+      .nation.pulse{ animation:none; }
+    }
+
+    /* ✅ NAV reflow móvil (todo igual, solo acomodado) */
+    @media (max-width: 760px){
+      nav{
+        flex-direction: column;
+        align-items: stretch;
+        gap:10px;
+        padding:10px 10px;
+      }
+      .brand{ justify-content:space-between; }
+      .navBtns{ justify-content:flex-start; }
+      .btn{ padding:10px 10px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="spot" id="spot"></div>
+  <div class="grain"></div>
+  <div class="cursor" id="cursor"></div>
+
+  <div class="wrap">
+    <nav>
+      <div class="brand">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="mark"></div>
+          <b>BBOT</b>
+        </div>
+        <span class="pill" id="clock">—</span>
+      </div>
+
+      <div class="navBtns" aria-label="Navegación">
+        <button class="btn" data-go="#about">Acerca de</button>
+        <button class="btn" data-go="#timeline">Ruta</button>
+        <button class="btn" data-go="#nations">Apoyo</button>
+        <button class="btn" data-go="#sponsors">Patrocinio</button>
+        <button class="btn primary" id="btnNote">Mensaje</button>
+      </div>
+    </nav>
+
+    <section id="top">
+      <div class="kicker">
+        <span class="pill">Hackathon • Rusia</span>
+        <span class="pill">Próximamente</span>
+        <span class="pill">BBOT</span>
+      </div>
+
+      <h1 class="title">BBOT</h1>
+      <div class="titleSub">Rumbo al Hackathon en Rusia • Innovación • Aprendizaje • Comunidad</div>
+      <div class="titleLine" aria-hidden="true"></div>
+
+      <p class="desc">
+        BBOT nace como una iniciativa orientada a demostrar que la informática puede ser una herramienta saludable,
+        formativa y positiva. Este sitio presenta un adelanto del proyecto y del camino hacia el hackathon en Rusia.
+      </p>
+
+      <div class="heroRow">
+        <button class="bigBtn primary" data-go="#nations">Ver apoyo internacional</button>
+        <button class="bigBtn" id="btnFlash">Interacción</button>
+        <button class="bigBtn" id="btnCopy">Copiar frase</button>
+      </div>
+
+      <div class="panels" id="about">
+        <div class="panel" data-parallax="0.20">
+          <div class="panelTop">
+            <span>Acerca de</span>
+            <span id="status">Estado: en desarrollo</span>
+          </div>
+          <h3>Origen y propósito</h3>
+          <p>
+            Todo comenzó con el sueño de dos costarricenses: evidenciar que la informática puede ser una fuerza
+            saludable, constructiva y útil para las personas. Desde esa visión, Oscar y Dyland impulsan BBOT con
+            un propósito claro: enseñar, inspirar y crear valor real mediante tecnología.
+          </p>
+          <div class="track"><div class="fill" id="fill"></div></div>
+        </div>
+
+        <div class="panel" data-parallax="0.12" id="drop">
+          <div class="panelTop">
+            <span>Cuenta regresiva</span>
+            <span id="dropLabel">—</span>
+          </div>
+          <h3>Objetivo: 26/11/2026</h3>
+          <p>Seguimiento del tiempo restante hacia la fecha objetivo.</p>
+
+          <div class="countRow">
+            <div class="tbox"><div class="n" id="d">00</div><div class="l">Días</div></div>
+            <div class="tbox"><div class="n" id="h">00</div><div class="l">Horas</div></div>
+            <div class="tbox"><div class="n" id="m">00</div><div class="l">Min</div></div>
+            <div class="tbox"><div class="n" id="s">00</div><div class="l">Seg</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding-top:48px" id="timeline">
+        <div class="kicker">
+          <span class="pill">Ruta</span>
+          <span class="pill">Preparación → Construcción → Validación → Presentación → Viaje</span>
+        </div>
+
+        <div class="panel show" data-parallax="0.16">
+          <div class="panelTop">
+            <span>Plan de trabajo</span>
+            <span class="pill">Ejecución</span>
+          </div>
+          <h3>Fases del proyecto</h3>
+          <p>Un camino claro, medible y orientado a resultados.</p>
+
+          <div class="timeline">
+            <div class="step"><div class="tag">01 • Preparación</div><b>Visión y narrativa</b><span>Definición del enfoque, objetivos y mensaje.</span></div>
+            <div class="step"><div class="tag">02 • Construcción</div><b>MVP funcional</b><span>Desarrollo de una versión sólida para demostrar valor.</span></div>
+            <div class="step"><div class="tag">03 • Validación</div><b>Pruebas y mejora</b><span>Iteración rápida con retroalimentación de calidad.</span></div>
+            <div class="step"><div class="tag">04 • Presentación</div><b>Pitch y demo</b><span>Comunicación efectiva, claridad y evidencia.</span></div>
+            <div class="step"><div class="tag">05 • Viaje</div><b>Rusia</b><span>Organización, patrocinio y logística.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding-top:48px" id="nations">
+        <div class="kicker">
+          <span class="pill">Apoyo</span>
+          <span class="pill">Comunidad internacional</span>
+        </div>
+
+        <div class="panel show" data-parallax="0.14">
+          <div class="panelTop">
+            <span>Apoyo internacional</span>
+            <span class="pill">Seleccionar un país</span>
+          </div>
+
+          <h3>Muro de agradecimiento</h3>
+          <p>“Muchas gracias por todo el apoyo” en distintos idiomas:</p>
+
+          <div class="nationsGrid" id="nationsGrid">
+            <div class="nation" data-country="Rusia" data-lang="Русский" data-thanks="Большое спасибо за всю поддержку">
+              <div class="nationTop"><div><div class="nationName">Rusia</div><div class="nationLang">Русский</div></div><div class="flag">RU</div></div>
+              <div class="thanks">Большое спасибо за всю поддержку</div>
+            </div>
+            <div class="nation" data-country="Nueva Zelanda" data-lang="English" data-thanks="Thank you so much for all the support">
+              <div class="nationTop"><div><div class="nationName">Nueva Zelanda</div><div class="nationLang">English</div></div><div class="flag">NZ</div></div>
+              <div class="thanks">Thank you so much for all the support</div>
+            </div>
+            <div class="nation" data-country="Australia" data-lang="English" data-thanks="Thank you so much for all the support">
+              <div class="nationTop"><div><div class="nationName">Australia</div><div class="nationLang">English</div></div><div class="flag">AU</div></div>
+              <div class="thanks">Thank you so much for all the support</div>
+            </div>
+            <div class="nation" data-country="Alemania" data-lang="Deutsch" data-thanks="Vielen Dank für die ganze Unterstützung">
+              <div class="nationTop"><div><div class="nationName">Alemania</div><div class="nationLang">Deutsch</div></div><div class="flag">DE</div></div>
+              <div class="thanks">Vielen Dank für die ganze Unterstützung</div>
+            </div>
+            <div class="nation" data-country="Italia" data-lang="Italiano" data-thanks="Grazie mille per tutto il supporto">
+              <div class="nationTop"><div><div class="nationName">Italia</div><div class="nationLang">Italiano</div></div><div class="flag">IT</div></div>
+              <div class="thanks">Grazie mille per tutto il supporto</div>
+            </div>
+            <div class="nation" data-country="Francia" data-lang="Français" data-thanks="Merci beaucoup pour tout le soutien">
+              <div class="nationTop"><div><div class="nationName">Francia</div><div class="nationLang">Français</div></div><div class="flag">FR</div></div>
+              <div class="thanks">Merci beaucoup pour tout le soutien</div>
+            </div>
+            <div class="nation" data-country="Holanda" data-lang="Nederlands" data-thanks="Heel erg bedankt voor alle steun">
+              <div class="nationTop"><div><div class="nationName">Holanda</div><div class="nationLang">Nederlands</div></div><div class="flag">NL</div></div>
+              <div class="thanks">Heel erg bedankt voor alle steun</div>
+            </div>
+          </div>
+
+          <div class="track"><div class="fill" id="nationsFill"></div></div>
+        </div>
+      </div>
+
+      <div style="padding-top:48px" id="sponsors">
+        <div class="kicker">
+          <span class="pill">Patrocinio</span>
+          <span class="pill">Apoyo al viaje</span>
+        </div>
+
+        <div class="sponsorCard" data-parallax="0.16">
+          <div class="sponsorTop">
+            <div>
+              <h2>Patrocinadores del viaje</h2>
+              <p><b>¿Quieres ser parte de este momento especial?</b> Escríbenos y conversemos sobre cómo sumar tu apoyo.</p>
+            </div>
+            <span class="pill">Actuales</span>
+          </div>
+
+          <div class="logos">
+            <div class="logoChip"><span class="miniDot"></span> Tebex</div>
+            <div class="logoChip"><span class="miniDot"></span> Samsung</div>
+          </div>
+
+          <div class="ctaRow">
+            <p class="ctaText">Contacto directo para patrocinio y apoyo institucional.</p>
+            <a class="ctaBtn"
+               href="mailto:chago12villalobos@gmail.com?subject=Patrocinio%20Hackathon%20Rusia%20-%20BBOT&body=Hola%2C%20me%20interesa%20apoyar%20a%20BBOT%20en%20su%20camino%20al%20hackathon%20en%20Rusia.%0A%0A1)%20Nombre%3A%0A2)%20Empresa%2FOrganizaci%C3%B3n%3A%0A3)%20Pa%C3%ADs%3A%0A4)%20Tipo%20de%20apoyo%20(efectivo%2C%20equipo%2C%20servicios%2C%20otro)%3A%0A5)%20Mensaje%3A%0A%0AGracias.">
+              ✉ Contáctanos
+            </a>
+          </div>
+
+          <div class="marquee" aria-hidden="true">
+            <div class="marqueeTrack">
+              <span>BBOT • HACKATHON RUSIA • 26/11/2026 • PATROCINIO • TEBEX • SAMSUNG • </span>
+              <span>BBOT • HACKATHON RUSIA • 26/11/2026 • PATROCINIO • TEBEX • SAMSUNG • </span>
+              <span>BBOT • HACKATHON RUSIA • 26/11/2026 • PATROCINIO • TEBEX • SAMSUNG • </span>
+              <span>BBOT • HACKATHON RUSIA • 26/11/2026 • PATROCINIO • TEBEX • SAMSUNG • </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="futureArea">
+        <button class="futureBtn" id="futureBtn">¿Quieres ser parte del futuro?</button>
+      </div>
+
+      <footer>© <span id="year"></span> BBOT — Hackathon Rusia</footer>
+    </section>
+  </div>
+
+  <div class="modalWrap" id="modalWrap" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modalTop">
+        <b id="modalTitle">BBOT</b>
+        <button class="close" id="btnClose">Cerrar</button>
+      </div>
+      <div class="modalBody" id="modalBody">—</div>
+    </div>
+  </div>
+
+  <script>
+    // Fecha objetivo (Costa Rica)
+    const LAUNCH_DATE = "2026-11-26T00:00:00-06:00";
+    const COPY_LINE = "BBOT — Rumbo al hackathon en Rusia. Objetivo: 26/11/2026.";
+
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+    const pad2 = (n)=>String(n).padStart(2,"0");
+
+    // Reloj nav
+    const clock = $("#clock");
+    function tickClock(){
+      const now = new Date();
+      clock.textContent = now.toLocaleString("es-CR", {
+        weekday:"short", year:"numeric", month:"short", day:"2-digit",
+        hour:"2-digit", minute:"2-digit"
+      });
+    }
+    tickClock(); setInterval(tickClock, 1000*15);
+
+    // Cuenta regresiva
+    const launch = new Date(LAUNCH_DATE);
+    $("#dropLabel").textContent =
+      "Meta: " + launch.toLocaleDateString("es-CR", { year:"numeric", month:"2-digit", day:"2-digit" }) + " • 00:00";
+
+    function tickCountdown(){
+      const now = Date.now();
+      let diff = launch.getTime() - now;
+
+      if(diff <= 0){
+        $("#d").textContent="00"; $("#h").textContent="00"; $("#m").textContent="00"; $("#s").textContent="00";
+        $("#status").textContent="Estado: en vivo";
+        return;
+      }
+
+      const days=Math.floor(diff/(1000*60*60*24)); diff-=days*(1000*60*60*24);
+      const hours=Math.floor(diff/(1000*60*60)); diff-=hours*(1000*60*60);
+      const mins=Math.floor(diff/(1000*60)); diff-=mins*(1000*60);
+      const secs=Math.floor(diff/1000);
+
+      $("#d").textContent=pad2(days);
+      $("#h").textContent=pad2(hours);
+      $("#m").textContent=pad2(mins);
+      $("#s").textContent=pad2(secs);
+    }
+    tickCountdown(); setInterval(tickCountdown, 1000);
+
+    // Scroll suave
+    function goTo(sel){
+      const el = document.querySelector(sel);
+      if(!el) return;
+      el.scrollIntoView({behavior:"smooth", block:"start"});
+    }
+    $$("button[data-go]").forEach(btn=>{
+      btn.addEventListener("click", ()=> goTo(btn.getAttribute("data-go")));
+    });
+
+    // Cursor + spotlight
+    const cursor = $("#cursor");
+    const spot = $("#spot");
+    let cx=0, cy=0, tx=0, ty=0;
+
+    window.addEventListener("mousemove",(e)=>{
+      tx=e.clientX; ty=e.clientY;
+      const mx = (e.clientX / window.innerWidth) * 100;
+      const my = (e.clientY / window.innerHeight) * 100;
+      document.documentElement.style.setProperty("--mx", mx + "%");
+      document.documentElement.style.setProperty("--my", my + "%");
+    });
+
+    function cursorLoop(){
+      cx += (tx - cx) * 0.18;
+      cy += (ty - cy) * 0.18;
+      cursor.style.left = cx + "px";
+      cursor.style.top  = cy + "px";
+      requestAnimationFrame(cursorLoop);
+    }
+    cursorLoop();
+
+    const hoverTargets = ["button",".panel",".sponsorCard",".logoChip","a.ctaBtn",".bigBtn",".nation"];
+    hoverTargets.forEach(sel=>{
+      $$(sel).forEach(el=>{
+        el.addEventListener("mouseenter", ()=> cursor.classList.add("big"));
+        el.addEventListener("mouseleave", ()=> cursor.classList.remove("big"));
+      });
+    });
+    window.addEventListener("touchstart", ()=> cursor.classList.add("off"), {passive:true});
+
+    // Reveal
+    const revealEls = [...$$(".panel"), ...$$(".sponsorCard")];
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{ if(en.isIntersecting) en.target.classList.add("show"); });
+    }, {threshold:0.14});
+    revealEls.forEach(el=>io.observe(el));
+
+    // Parallax (suave)
+    const parallaxEls = $$("[data-parallax]");
+    let mx=0,my=0;
+    window.addEventListener("mousemove",(e)=>{
+      mx = (e.clientX / window.innerWidth - 0.5);
+      my = (e.clientY / window.innerHeight - 0.5);
+    });
+    function parallaxLoop(){
+      parallaxEls.forEach(el=>{
+        const k = parseFloat(el.getAttribute("data-parallax")||"0.12");
+        if(el.classList.contains("show")){
+          el.style.transform = `translate(${mx*22*k}px, ${my*16*k}px)`;
+        }
+      });
+      requestAnimationFrame(parallaxLoop);
+    }
+    parallaxLoop();
+
+    // Barras por scroll
+    const fill = $("#fill");
+    const nationsFill = $("#nationsFill");
+    function updateScrollFill(){
+      const doc = document.documentElement;
+      const max = (doc.scrollHeight - doc.clientHeight) || 1;
+      const pct = (doc.scrollTop / max) * 100;
+      fill.style.width = pct.toFixed(2) + "%";
+      nationsFill.style.width = Math.min(100, Math.max(0, (pct - 35) * 1.35)).toFixed(2) + "%";
+    }
+    window.addEventListener("scroll", updateScrollFill, {passive:true});
+    updateScrollFill();
+
+    // Flash
+    function flash(){
+      const overlay = document.createElement("div");
+      overlay.style.position="fixed";
+      overlay.style.inset="0";
+      overlay.style.background="rgba(255,255,255,.12)";
+      overlay.style.pointerEvents="none";
+      overlay.style.zIndex="1000";
+      document.body.appendChild(overlay);
+      setTimeout(()=>overlay.remove(), 120);
+      spot.style.opacity = ".72";
+      setTimeout(()=>spot.style.opacity = ".55", 180);
+    }
+    $("#btnFlash").addEventListener("click", flash);
+
+    // Copy
+    $("#btnCopy").addEventListener("click", async ()=>{
+      try{
+        await navigator.clipboard.writeText(COPY_LINE);
+        const old = $("#btnCopy").textContent;
+        $("#btnCopy").textContent = "Copiado";
+        setTimeout(()=> $("#btnCopy").textContent = old, 900);
+      }catch{ alert(COPY_LINE); }
+    });
+
+    // Modal
+    const modalWrap = $("#modalWrap");
+    const modalTitle = $("#modalTitle");
+    const modalBody = $("#modalBody");
+    function openModal(title, body){
+      modalTitle.textContent = title;
+      modalBody.innerHTML = body;
+      modalWrap.classList.add("on");
+      modalWrap.setAttribute("aria-hidden","false");
+    }
+    function closeModal(){
+      modalWrap.classList.remove("on");
+      modalWrap.setAttribute("aria-hidden","true");
+    }
+
+    // Nations interaction
+    $$("#nationsGrid .nation").forEach(card=>{
+      card.addEventListener("click", ()=>{
+        card.classList.remove("pulse");
+        void card.offsetWidth;
+        card.classList.add("pulse");
+
+        const country = card.getAttribute("data-country");
+        const lang = card.getAttribute("data-lang");
+        const thanks = card.getAttribute("data-thanks");
+
+        openModal(
+          `Agradecimiento — ${country.toUpperCase()}`,
+          `<div><b>Idioma:</b> ${lang}</div>
+           <div style="margin-top:10px; padding:12px; border:1px solid rgba(255,255,255,.18); border-radius:16px; background: rgba(255,255,255,.05);">
+             ${thanks}
+           </div>`
+        );
+        flash();
+      });
+    });
+
+    // Bottom CTA
+    $("#futureBtn").addEventListener("click", ()=>{
+      openModal("Futuro", `<div style="font-size:16px; letter-spacing:.4px;">Gracias por ser parte de este gran futuro.</div>`);
+      flash();
+    });
+
+    // Message
+    $("#btnNote").addEventListener("click", ()=>{
+      openModal(
+        "Mensaje",
+        `BBOT surge de una visión compartida: convertir la informática en una fuerza saludable, positiva y útil para la comunidad.<br><br>
+         <b>Oscar</b> y <b>Dyland</b> lideran este camino con enfoque en aprendizaje, impacto y excelencia.`
+      );
+      flash();
+    });
+
+    $("#btnClose").addEventListener("click", closeModal);
+    modalWrap.addEventListener("click",(e)=>{ if(e.target===modalWrap) closeModal(); });
+    window.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeModal(); });
+
+    $("#year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
